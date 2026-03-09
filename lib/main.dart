@@ -5,16 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
 
-import 'firebase_options.dart';
+
 
 @pragma('vm:entry-point')
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp();
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   runApp(const MyApp());
 }
@@ -52,5 +52,5 @@ void subscribe() {
   FirebaseMessaging messaging = FirebaseMessaging.instance;
 
   messaging.subscribeToTopic('all');
-  print("Subscribe to all topic");
+  debugPrint("Subscribe to all topic");
 }
