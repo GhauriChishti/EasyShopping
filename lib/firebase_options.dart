@@ -54,11 +54,11 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCgmn9NAC8y-sl7GPCFzO9Xu4p0ocqpzro',
-    appId: '1:55065289851:android:23db8df47c5bdc8f1beede',
-    messagingSenderId: '55065289851',
-    projectId: 'easyshopping-ce06a',
-    storageBucket: 'easyshopping-ce06a.appspot.com',
+    apiKey: 'AIzaSyCriBUmQqQE0JaEFGcmCL5U1K34yVnPCcI',
+    appId: '1:380244150098:android:1354f976c23ac80d345c8b',
+    messagingSenderId: '380244150098',
+    projectId: 'ecomm-285ef',
+    storageBucket: 'ecomm-285ef.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
