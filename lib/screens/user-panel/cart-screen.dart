@@ -6,13 +6,103 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  bool _isPlacingOrder = false;
 
   double _parsePrice(dynamic value) {
     if (value == null) return 0;
     if (value is num) return value.toDouble();
     return double.tryParse(value.toString()) ?? 0;
+  }
+
+  Future<void> _placeOrder() async {
+    if (_isPlacingOrder) return;
+
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to place an order.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isPlacingOrder = true;
+    });
+
+    try {
+      final cartCollection = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('cart');
+
+      final cartSnapshot = await cartCollection.get();
+
+      if (cartSnapshot.docs.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your cart is empty.')),
+        );
+        return;
+      }
+
+      final List<Map<String, dynamic>> cartItems = [];
+      double totalPrice = 0;
+
+      for (final doc in cartSnapshot.docs) {
+        final data = doc.data();
+        final double price = _parsePrice(data['price']);
+        final int quantity = (data['quantity'] as num?)?.toInt() ?? 1;
+
+        totalPrice += price * quantity;
+        cartItems.add({...data, 'cartItemId': doc.id});
+      }
+
+      final orderDoc = FirebaseFirestore.instance.collection('orders').doc();
+      final String orderId = orderDoc.id;
+
+      await orderDoc.set({
+        'orderId': orderId,
+        'userId': user.uid,
+        'customerName': user.displayName ?? '',
+        'customerEmail': user.email ?? '',
+        'items': cartItems,
+        'totalPrice': totalPrice,
+        'paymentMethod': 'COD',
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      final WriteBatch batch = FirebaseFirestore.instance.batch();
+      for (final doc in cartSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order placed successfully (COD).')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to place order. Please try again.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPlacingOrder = false;
+        });
+      }
+    }
   }
 
   @override
@@ -155,20 +245,49 @@ class CartScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Total',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        Text(
+                          'PKR ${totalPrice.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppConstant.appMainColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      'PKR ${totalPrice.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppConstant.appMainColor,
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isPlacingOrder ? null : _placeOrder,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppConstant.appMainColor,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: _isPlacingOrder
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Place Order',
+                                style: TextStyle(color: Colors.white),
+                              ),
                       ),
                     ),
                   ],
