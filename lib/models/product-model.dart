@@ -7,7 +7,7 @@ class ProductModel {
   final String categoryName;
   final String salePrice;
   final String fullPrice;
-  final List productImages;
+  final List<String> productImages;
   final String deliveryTime;
   final bool isSale;
   final String productDescription;
@@ -47,17 +47,32 @@ class ProductModel {
   }
 
   factory ProductModel.fromMap(Map<String, dynamic> json) {
+    final dynamic imageField = json['productImages'] ?? json['imageUrl'];
+
+    List<String> parsedImages = [];
+    if (imageField is List) {
+      parsedImages = imageField.map((e) => e.toString()).toList();
+    } else if (imageField is String && imageField.isNotEmpty) {
+      parsedImages = [imageField];
+    }
+
+    final String fullPriceValue =
+        (json['fullPrice'] ?? json['price'] ?? '').toString();
+
     return ProductModel(
-      productId: json['productId'],
-      categoryId: json['categoryId'],
-      productName: json['productName'],
-      categoryName: json['categoryName'],
-      salePrice: json['salePrice'],
-      fullPrice: json['fullPrice'],
-      productImages: json['productImages'],
-      deliveryTime: json['deliveryTime'],
-      isSale: json['isSale'],
-      productDescription: json['productDescription'],
+      productId: (json['productId'] ?? '').toString(),
+      categoryId: (json['categoryId'] ?? '').toString(),
+      productName: (json['productName'] ?? json['name'] ?? '').toString(),
+      categoryName:
+          (json['categoryName'] ?? json['category'] ?? 'Uncategorized')
+              .toString(),
+      salePrice: (json['salePrice'] ?? fullPriceValue).toString(),
+      fullPrice: fullPriceValue,
+      productImages: parsedImages,
+      deliveryTime: (json['deliveryTime'] ?? '').toString(),
+      isSale: json['isSale'] == true,
+      productDescription:
+          (json['productDescription'] ?? json['description'] ?? '').toString(),
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
     );

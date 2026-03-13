@@ -1,15 +1,12 @@
-// ignore_for_file: file_names, prefer_const_constructors, avoid_unnecessary_containers, sized_box_for_whitespace, prefer_const_literals_to_create_immutables, unnecessary_string_interpolations, prefer_interpolation_to_compose_strings
+// ignore_for_file: file_names, prefer_const_constructors
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_comm/models/product-model.dart';
+import 'package:e_comm/screens/user-panel/product-deatils-screen.dart';
 import 'package:e_comm/utils/app-constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_card/image_card.dart';
-
-import 'product-deatils-screen.dart';
 
 class AllProductsScreen extends StatelessWidget {
   const AllProductsScreen({super.key});
@@ -18,113 +15,108 @@ class AllProductsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        iconTheme: IconThemeData(
-          color: AppConstant.appTextColor,
-        ),
+        iconTheme: IconThemeData(color: AppConstant.appTextColor),
         backgroundColor: AppConstant.appMainColor,
         title: Text(
           'All Products',
           style: TextStyle(color: AppConstant.appTextColor),
         ),
       ),
-      body: FutureBuilder(
-        future: FirebaseFirestore.instance
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
             .collection('products')
-            .where('isSale', isEqualTo: false)
-            .get(),
-        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
-              child: Text("Error"),
+              child: Text('Unable to load products right now.'),
             );
           }
+
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Container(
-              height: Get.height / 5,
-              child: Center(
-                child: CupertinoActivityIndicator(),
-              ),
-            );
+            return Center(child: CupertinoActivityIndicator());
           }
 
-          if (snapshot.data!.docs.isEmpty) {
+          final docs = snapshot.data?.docs ?? [];
+          if (docs.isEmpty) {
             return Center(
-              child: Text("No products found!"),
+              child: Text('No products available yet.'),
             );
           }
 
-          if (snapshot.data != null) {
-            return GridView.builder(
-              itemCount: snapshot.data!.docs.length,
-              shrinkWrap: true,
-              physics: BouncingScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 5,
-                crossAxisSpacing: 5,
-                childAspectRatio: 0.80,
-              ),
-              itemBuilder: (context, index) {
-                final productData = snapshot.data!.docs[index];
-                ProductModel productModel = ProductModel(
-                  productId: productData['productId'],
-                  categoryId: productData['categoryId'],
-                  productName: productData['productName'],
-                  categoryName: productData['categoryName'],
-                  salePrice: productData['salePrice'],
-                  fullPrice: productData['fullPrice'],
-                  productImages: productData['productImages'],
-                  deliveryTime: productData['deliveryTime'],
-                  isSale: productData['isSale'],
-                  productDescription: productData['productDescription'],
-                  createdAt: productData['createdAt'],
-                  updatedAt: productData['updatedAt'],
-                );
+          return GridView.builder(
+            padding: EdgeInsets.all(8),
+            itemCount: docs.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 0.72,
+            ),
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final product = ProductModel.fromMap(data);
+              final imageUrl = product.productImages.isNotEmpty
+                  ? product.productImages.first
+                  : '';
 
-                // CategoriesModel categoriesModel = CategoriesModel(
-                //   categoryId: snapshot.data!.docs[index]['categoryId'],
-                //   categoryImg: snapshot.data!.docs[index]['categoryImg'],
-                //   categoryName: snapshot.data!.docs[index]['categoryName'],
-                //   createdAt: snapshot.data!.docs[index]['createdAt'],
-                //   updatedAt: snapshot.data!.docs[index]['updatedAt'],
-                // );
-                return Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Get.to(() =>
-                          ProductDetailsScreen(productModel: productModel)),
-                      child: Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Container(
-                          child: FillImageCard(
-                            borderRadius: 20.0,
-                            width: Get.width / 2.3,
-                            heightImage: Get.height / 6,
-                            imageProvider: CachedNetworkImageProvider(
-                              productModel.productImages[0],
+              return GestureDetector(
+                onTap: () => Get.to(
+                  () => ProductDetailsScreen(productModel: product),
+                ),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            title: Center(
-                              child: Text(
-                                productModel.productName,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: TextStyle(fontSize: 12.0),
-                              ),
-                            ),
-                            footer: Center(
-                              child: Text("PKR: " + productModel.fullPrice),
-                            ),
+                            child: imageUrl.isEmpty
+                                ? Icon(Icons.image_not_supported)
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          Icon(Icons.broken_image),
+                                    ),
+                                  ),
                           ),
                         ),
-                      ),
+                        SizedBox(height: 8),
+                        Text(
+                          product.productName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'PKR ${product.fullPrice}',
+                          style: TextStyle(color: AppConstant.appMainColor),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          product.categoryName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
+                      ],
                     ),
-                  ],
-                );
-              },
-            );
-          }
-
-          return Container();
+                  ),
+                ),
+              );
+            },
+          );
         },
       ),
     );
