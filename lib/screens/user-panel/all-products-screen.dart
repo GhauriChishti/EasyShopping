@@ -2,7 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_comm/models/product-model.dart';
-import 'package:e_comm/screens/user-panel/product-deatils-screen.dart';
+import 'package:e_comm/screens/product_details_screen.dart';
 import 'package:e_comm/utils/app-constant.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

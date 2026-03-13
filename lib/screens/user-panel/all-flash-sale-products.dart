@@ -8,7 +8,7 @@ import 'package:get/get.dart';
 import 'package:image_card/image_card.dart';
 import '../../models/product-model.dart';
 import '../../utils/app-constant.dart';
-import 'product-deatils-screen.dart';
+import 'package:e_comm/screens/product_details_screen.dart';
 
 class AllFlashSaleProductScreen extends StatefulWidget {
   const AllFlashSaleProductScreen({super.key});
