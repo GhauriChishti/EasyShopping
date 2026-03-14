@@ -3,6 +3,7 @@
 import 'package:e_comm/screens/user-panel/all-flash-sale-products.dart';
 import 'package:e_comm/screens/user-panel/all-products-screen.dart';
 import 'package:e_comm/screens/user-panel/notification_screen.dart';
+import 'package:e_comm/screens/user-panel/my-orders-screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -77,6 +78,15 @@ class _MainScreenState extends State<MainScreen> {
               ),
             );
           }),
+          GestureDetector(
+            onTap: () => Get.to(() => const MyOrdersScreen()),
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Icon(
+                Icons.receipt_long,
+              ),
+            ),
+          ),
           GestureDetector(
             onTap: () => Get.to(() => CartScreen()),
             child: Padding(
